@@ -1,0 +1,10 @@
+{
+  "name": "agroflow",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AgroFlow -- Agricultural Supply Chain Infrastructure (Tanzania-first). Monorepo root.",
+  "scripts": {
+    "dev": "echo \"define per-app dev scripts once apps are scaffolded\"",
+    "build": "echo \"define per-app build scripts once apps are scaffolded\""
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@agroflow/database",
+  "version": "0.1.0",
+  "description": "Prisma schema and migrations -- PostgreSQL + PostGIS, hosted on a managed provider (e.g. Supabase or Neon).",
+  "main": "prisma/schema.prisma",
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "studio": "prisma studio",
+    "seed": "ts-node prisma/seed.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
+  "dependencies": {
+    "@agroflow/config": "workspace:*",
+    "@prisma/client": "^5.19.1"
+  },
+  "devDependencies": {
+    "prisma": "^5.19.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4",
+    "@types/node": "^22.5.0"
+  }
+}

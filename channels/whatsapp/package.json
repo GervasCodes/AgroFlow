@@ -1,0 +1,25 @@
+{
+  "name": "@agroflow/channel-whatsapp",
+  "version": "0.1.0",
+  "description": "WhatsApp Business API bot -- numbered-reply flows mirroring USSD, plus optional photo upload and Kiswahili voice-note price guidance (Section 19).",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agroflow/types": "workspace:*",
+    "@agroflow/config": "workspace:*",
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "tsx": "^4.19.0",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.5.0"
+  }
+}

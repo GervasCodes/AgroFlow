@@ -1,0 +1,110 @@
+# Render Blueprint -- deploys AgroFlow's five services + database in one
+# commit. Push this to your repo root, then in the Render dashboard:
+# New > Blueprint > connect this repo. See DEPLOYMENT.md for the full
+# walkthrough, including which sync:false vars you'll be prompted for.
+databases:
+  - name: agroflow-db
+    plan: basic-256mb
+    region: frankfurt
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: agroflow-api
+    runtime: node
+    region: frankfurt
+    plan: starter
+    rootDir: apps/api
+    buildCommand: cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @agroflow/database generate && pnpm --filter @agroflow/api build
+    startCommand: node dist/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase: { name: agroflow-db, property: connectionString }
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
+      - key: USSD_GATEWAY_API_KEY
+        sync: false
+      - key: PAYMENT_GATEWAY_API_KEY
+        sync: false
+      - key: INTERNAL_SERVICE_SECRET
+        sync: false
+      - key: SMS_NOTIFY_URL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+
+  - type: web
+    name: agroflow-web
+    runtime: static
+    rootDir: apps/web
+    buildCommand: cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @agroflow/web build
+    staticPublishPath: apps/web/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false
+
+  - type: web
+    name: agroflow-ussd
+    runtime: node
+    region: frankfurt
+    plan: starter
+    rootDir: channels/ussd
+    buildCommand: cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @agroflow/channel-ussd build
+    startCommand: node dist/index.js
+    envVars:
+      - key: AGROFLOW_API_URL
+        sync: false
+      - key: USSD_GATEWAY_API_KEY
+        sync: false
+
+  - type: web
+    name: agroflow-sms
+    runtime: node
+    region: frankfurt
+    plan: starter
+    rootDir: channels/sms
+    buildCommand: cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @agroflow/channel-sms build
+    startCommand: node dist/index.js
+    envVars:
+      - key: INTERNAL_SERVICE_SECRET
+        sync: false
+      - key: SMS_API_KEY
+        sync: false
+
+  - type: web
+    name: agroflow-whatsapp
+    runtime: node
+    region: frankfurt
+    plan: starter
+    rootDir: channels/whatsapp
+    buildCommand: cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @agroflow/channel-whatsapp build
+    startCommand: node dist/index.js
+    envVars:
+      - key: AGROFLOW_API_URL
+        sync: false
+      - key: USSD_GATEWAY_API_KEY
+        sync: false
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        sync: false

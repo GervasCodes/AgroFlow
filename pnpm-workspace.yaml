@@ -1,0 +1,17 @@
+# Declares which folders are workspace packages/apps for pnpm.
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "channels/*"
+  - "database"
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true
+minimumReleaseAgeExclude:
+  - '@expo/cli@54.0.27'
+  - expo-constants@18.0.14
+  - expo-file-system@19.0.24
+  - expo-modules-autolinking@3.0.27
+  - expo@54.0.37

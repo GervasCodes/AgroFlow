@@ -1,0 +1,16 @@
+{
+  "name": "@agroflow/types",
+  "version": "0.1.0",
+  "description": "Shared TypeScript types for AgroFlow (User, Role, Farm, Order, etc.).",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agroflow/config": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

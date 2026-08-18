@@ -1,0 +1,46 @@
+{
+  "name": "@agroflow/mobile",
+  "version": "0.1.0",
+  "description": "AgroFlow mobile app -- React Native + Expo. Primary channel for farmers (plus lighter companion views for buyer/aggregator/transporter roles, added in a later phase). Offline-first.",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agroflow/api-client": "workspace:*",
+    "@agroflow/config": "workspace:*",
+    "@agroflow/types": "workspace:*",
+    "@agroflow/validation": "workspace:*",
+    "@babel/runtime": "^8.0.0",
+    "@expo-google-fonts/fraunces": "^0.2.3",
+    "@expo-google-fonts/ibm-plex-mono": "^0.2.3",
+    "@expo-google-fonts/manrope": "^0.2.3",
+    "@expo/metro-runtime": "~6.1.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/netinfo": "11.4.1",
+    "@tanstack/react-query": "^5.53.1",
+    "expo": "~54.0.37",
+    "expo-blur": "~15.0.8",
+    "expo-constants": "~18.0.14",
+    "expo-font": "~14.0.12",
+    "expo-linear-gradient": "~15.0.8",
+    "expo-router": "~6.0.24",
+    "expo-splash-screen": "~31.0.13",
+    "expo-status-bar": "~3.0.9",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "5.6.2",
+    "react-native-screens": "4.16.0",
+    "react-native-svg": "15.12.1",
+    "react-native-web": "~0.21.2",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.17",
+    "typescript": "^5.5.4"
+  }
+}

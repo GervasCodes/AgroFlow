@@ -1,0 +1,6 @@
+{
+  "name": "@agroflow/utils",
+  "version": "0.1.0",
+  "description": "Shared helper functions (formatting, geo helpers, phone-number normalisation, etc.).",
+  "main": "src/index.ts"
+}

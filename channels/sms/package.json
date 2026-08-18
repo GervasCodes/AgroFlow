@@ -1,0 +1,23 @@
+{
+  "name": "@agroflow/channel-sms",
+  "version": "0.1.0",
+  "description": "SMS notification dispatch + inbound shortcode handling. Co-primary notification channel alongside push (Section 21).",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "tsx": "^4.19.0",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.5.0"
+  }
+}

@@ -1,0 +1,92 @@
+/* AgroFlow global styles: font loading, CSS custom properties, and the
+   glassmorphism / neumorphic-glass utility layer every component builds
+   on. Signature visual idea: surfaces feel like frosted, dew-lit glass
+   laid over a living field -- soft blur, a faint upper-edge "shine",
+   and warm harvest-gold light bleeding through from behind. */
+
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply font-sans text-leaf-950 antialiased;
+    background:
+      radial-gradient(120% 80% at 10% -10%, rgba(227, 168, 46, 0.16), transparent 55%),
+      radial-gradient(120% 90% at 100% 0%, rgba(52, 143, 69, 0.14), transparent 60%),
+      linear-gradient(180deg, #F7FAF5 0%, #F0F5EC 100%);
+    min-height: 100dvh;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+
+  /* Visible keyboard focus everywhere -- never suppressed for aesthetics. */
+  :focus-visible {
+    outline: 2px solid theme("colors.leaf.500");
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Base frosted-glass surface: translucent field-white, blurred, with a
+     thin light border that catches the "edge" the way real glass does. */
+  .glass-panel {
+    @apply relative bg-white/55 backdrop-blur-xl border border-white/60 rounded-3xl shadow-glass;
+  }
+
+  .glass-panel-strong {
+    @apply relative bg-white/70 backdrop-blur-2xl border border-white/70 rounded-3xl shadow-glass-lg;
+  }
+
+  /* A thin, brighter line along the top edge of a glass panel -- the
+     "dew highlight" that makes flat translucency read as physical glass. */
+  .glass-edge-highlight {
+    @apply pointer-events-none absolute inset-x-6 top-0 h-px rounded-full;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+  }
+
+  .glass-input {
+    @apply w-full rounded-2xl border border-leaf-900/10 bg-white/60 backdrop-blur-md px-4 py-3
+      text-[15px] text-leaf-950 placeholder:text-leaf-900/40
+      shadow-glass-sm transition
+      focus:border-leaf-500/50 focus:bg-white/80 focus:outline-none focus:ring-2 focus:ring-leaf-400/40;
+  }
+
+  /* Neumorphic-glass icon tile: a soft-pressed rounded square, gradient
+     leaf-to-harvest fill, inner glow, and a diffuse dual shadow so the
+     icon reads as embossed into frosted glass rather than a flat 2D mark. */
+  .neu-glass-tile {
+    @apply relative flex items-center justify-center rounded-2xl;
+    background: linear-gradient(155deg, rgba(255,255,255,0.85), rgba(255,255,255,0.35));
+    box-shadow: 6px 6px 16px rgba(15,61,40,0.14), -6px -6px 16px rgba(255,255,255,0.7),
+      inset 0 1px 0 rgba(255,255,255,0.8);
+  }
+
+  .neu-glass-tile::after {
+    content: "";
+    @apply pointer-events-none absolute inset-0 rounded-2xl;
+    box-shadow: inset 0 -6px 10px -6px rgba(15,61,40,0.18);
+  }
+}

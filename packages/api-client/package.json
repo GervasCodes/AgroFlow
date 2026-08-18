@@ -1,0 +1,17 @@
+{
+  "name": "@agroflow/api-client",
+  "version": "0.1.0",
+  "description": "Shared API client wrapper used by apps/web and apps/mobile to call apps/api.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agroflow/types": "workspace:*",
+    "@agroflow/validation": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

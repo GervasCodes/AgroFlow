@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "AgroFlow",
+    "slug": "agroflow",
+    "scheme": "agroflow",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#F7FAF5"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.agroflow.mobile" },
+    "android": {
+      "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#0F3D28" },
+      "package": "com.agroflow.mobile"
+    },
+    "plugins": ["expo-router", "expo-font"],
+    "extra": {
+      "apiUrl": "https://api.agroflow.example/api/v1"
+    }
+  }
+}
