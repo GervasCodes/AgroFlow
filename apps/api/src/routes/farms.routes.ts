@@ -6,7 +6,7 @@ import { requireCapability } from "../middleware/rbac.js";
 import { validateBody, createFarmSchema } from "../validators/index.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const farmsRouter = Router();
+export const farmsRouter : Router = Router();
 
 farmsRouter.use(requireAuth);
 

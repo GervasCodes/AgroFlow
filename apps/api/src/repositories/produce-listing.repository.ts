@@ -2,6 +2,7 @@
 // browsing (for buyers/aggregators) only ever sees PUBLISHED listings;
 // an owner sees all statuses for their own farms.
 import { prisma } from "../lib/prisma.js";
+import type { ProduceListingStatus } from "@prisma/client";
 
 const listingInclude = {
   crop: true,
@@ -46,7 +47,7 @@ export function createListing(input: {
   return prisma.produceListing.create({ data: input, include: listingInclude });
 }
 
-export function updateListingStatus(id: string, status: string) {
+export function updateListingStatus(id: string, status: ProduceListingStatus) {
   return prisma.produceListing.update({ where: { id }, data: { status }, include: listingInclude });
 }
 

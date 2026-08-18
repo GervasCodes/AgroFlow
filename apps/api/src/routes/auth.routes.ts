@@ -6,7 +6,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { validateBody, registerSchema, loginSchema, requestOtpSchema, verifyOtpSchema } from "../validators/index.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const authRouter = Router();
+export const authRouter : Router = Router();
 
 authRouter.post("/register", validateBody(registerSchema), asyncHandler(authController.register));
 authRouter.post("/login", validateBody(loginSchema), asyncHandler(authController.login));

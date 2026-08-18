@@ -6,7 +6,7 @@ import { requireCapability } from "../middleware/rbac.js";
 import { validateBody, requestShipmentSchema, updateShipmentStatusSchema } from "../validators/index.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const shipmentsRouter = Router();
+export const shipmentsRouter : Router = Router();
 shipmentsRouter.use(requireAuth);
 
 shipmentsRouter.get("/available", requireCapability("shipment", "read"), asyncHandler(shipmentsController.listAvailable));

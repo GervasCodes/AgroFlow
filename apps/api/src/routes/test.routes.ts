@@ -17,7 +17,7 @@ import { requireCapability } from "../middleware/rbac.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import type { ApiSuccess } from "@agroflow/types";
 
-export const testRouter = Router();
+export const testRouter : Router = Router();
 
 testRouter.get(
   "/whoami",

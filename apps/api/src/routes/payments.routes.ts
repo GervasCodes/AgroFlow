@@ -10,7 +10,7 @@ import { requirePaymentWebhookSecret } from "../middleware/paymentWebhookAuth.js
 import { validateBody, initiatePaymentSchema } from "../validators/index.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const paymentsRouter = Router();
+export const paymentsRouter : Router = Router();
 
 paymentsRouter.get(
   "/mine",

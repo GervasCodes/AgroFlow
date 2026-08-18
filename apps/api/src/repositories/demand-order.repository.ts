@@ -1,5 +1,6 @@
 // Data-access for DemandOrder (Marketplace domain).
 import { prisma } from "../lib/prisma.js";
+import type { DemandOrder } from "@prisma/client";
 
 const include = { crop: true } as const;
 
@@ -28,6 +29,6 @@ export function createDemandOrder(input: {
   return prisma.demandOrder.create({ data: input, include });
 }
 
-export function updateDemandOrderStatus(id: string, status: string) {
+export function updateDemandOrderStatus(id: string, status: DemandOrder["status"]) {
   return prisma.demandOrder.update({ where: { id }, data: { status }, include });
 }

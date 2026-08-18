@@ -12,7 +12,7 @@ import { validateBody } from "../validators/index.js";
 import { channelSellSchema } from "../validators/channels.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const channelsRouter = Router();
+export const channelsRouter : Router = Router();
 
 channelsRouter.use(requireChannelSecret);
 

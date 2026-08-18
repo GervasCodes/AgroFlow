@@ -6,7 +6,7 @@ import { requireCapability } from "../middleware/rbac.js";
 import { validateBody, createQualityInspectionSchema } from "../validators/index.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const qualityRouter = Router();
+export const qualityRouter : Router = Router();
 qualityRouter.use(requireAuth);
 
 qualityRouter.get(

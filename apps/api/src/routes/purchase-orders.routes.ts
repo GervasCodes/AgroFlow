@@ -6,7 +6,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireCapability } from "../middleware/rbac.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const purchaseOrdersRouter = Router();
+export const purchaseOrdersRouter : Router = Router();
 purchaseOrdersRouter.use(requireAuth);
 
 purchaseOrdersRouter.get(

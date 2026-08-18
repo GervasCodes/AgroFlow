@@ -6,7 +6,7 @@ import { requireCapability } from "../middleware/rbac.js";
 import { validateBody, createWarehouseSchema } from "../validators/index.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const warehousesRouter = Router();
+export const warehousesRouter : Router = Router();
 warehousesRouter.use(requireAuth);
 
 warehousesRouter.get("/", requireCapability("warehouse", "read"), asyncHandler(warehousesController.browse));

@@ -3,6 +3,7 @@
 // approved (see services/matches -- there is no direct
 // purchase-order:create route in this phase).
 import { prisma } from "../lib/prisma.js";
+import type { PurchaseOrder } from "@prisma/client";
 
 const include = { items: true } as const;
 
@@ -18,7 +19,7 @@ export function findPurchaseOrderById(id: string) {
   return prisma.purchaseOrder.findUnique({ where: { id }, include });
 }
 
-export function updateStatus(id: string, status: string) {
+export function updateStatus(id: string, status: PurchaseOrder["status"]) {
   return prisma.purchaseOrder.update({ where: { id }, data: { status }, include });
 }
 

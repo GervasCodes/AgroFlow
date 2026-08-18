@@ -6,7 +6,7 @@ import { requireCapability } from "../middleware/rbac.js";
 import { validateBody, createDemandOrderSchema } from "../validators/index.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const demandRouter = Router();
+export const demandRouter : Router = Router();
 demandRouter.use(requireAuth);
 
 demandRouter.get("/mine", requireCapability("demand_order", "read"), asyncHandler(demandController.listMine));

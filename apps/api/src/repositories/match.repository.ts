@@ -1,6 +1,7 @@
 // Data-access for Match (Marketplace domain) -- the proposal linking a
 // buyer's DemandOrder to a seller's ProduceListing.
 import { prisma } from "../lib/prisma.js";
+import type { Match } from "@prisma/client";
 
 const include = {
   demandOrder: { include: { crop: true } },
@@ -41,6 +42,6 @@ export function createMatch(input: {
   return prisma.match.create({ data: input, include });
 }
 
-export function updateMatchStatus(id: string, status: string) {
+export function updateMatchStatus(id: string, status: Match["status"]) {
   return prisma.match.update({ where: { id }, data: { status }, include });
 }

@@ -8,7 +8,7 @@ import { requireCapability } from "../middleware/rbac.js";
 import { validateBody, createProduceListingSchema } from "../validators/index.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const produceRouter = Router();
+export const produceRouter : Router = Router();
 
 produceRouter.use(requireAuth);
 

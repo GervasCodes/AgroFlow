@@ -15,7 +15,7 @@ import { shipmentsRouter } from "./shipments.routes.js";
 import { warehousesRouter } from "./warehouses.routes.js";
 import { paymentsRouter } from "./payments.routes.js";
 
-export const apiRouter = Router();
+export const apiRouter : Router = Router();
 
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/farms", farmsRouter);

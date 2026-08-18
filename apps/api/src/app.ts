@@ -3,7 +3,7 @@
 // before rbac, rbac before any route handler -- both are applied
 // per-route (see routes/*.routes.ts) rather than globally, since not
 // every route requires authentication.
-import express from "express";
+import express, { type Express } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { getEnv } from "./config/index.js";
@@ -11,7 +11,7 @@ import { apiRouter } from "./routes/index.js";
 import { AppError } from "./utils/AppError.js";
 import type { ApiError } from "@agroflow/types";
 
-export function createApp() {
+export function createApp(): Express {
   const env = getEnv();
   const app = express();
 

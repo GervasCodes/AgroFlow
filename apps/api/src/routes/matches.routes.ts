@@ -9,7 +9,7 @@ import { requireCapability } from "../middleware/rbac.js";
 import { validateBody, proposeMatchSchema } from "../validators/index.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const matchesRouter = Router();
+export const matchesRouter : Router = Router();
 matchesRouter.use(requireAuth);
 
 matchesRouter.get("/as-buyer", requireCapability("match", "read"), asyncHandler(matchesController.listAsBuyer));

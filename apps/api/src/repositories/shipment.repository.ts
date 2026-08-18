@@ -1,5 +1,6 @@
 // Data-access for Shipment (Logistics domain).
 import { prisma } from "../lib/prisma.js";
+import type { ShipmentStatus } from "@prisma/client";
 
 const include = {
   purchaseOrder: { select: { id: true, buyerId: true, sellerId: true, totalAmount: true, currency: true } },
@@ -51,6 +52,6 @@ export function assignTransporter(id: string, transporterId: string) {
   });
 }
 
-export function updateStatus(id: string, status: string, extra: { pickedUpAt?: Date; deliveredAt?: Date } = {}) {
+export function updateStatus(id: string, status: ShipmentStatus, extra: { pickedUpAt?: Date; deliveredAt?: Date } = {}) {
   return prisma.shipment.update({ where: { id }, data: { status, ...extra }, include });
 }
