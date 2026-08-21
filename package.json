@@ -6,11 +6,5 @@
   "scripts": {
     "dev": "echo \"define per-app dev scripts once apps are scaffolded\"",
     "build": "echo \"define per-app build scripts once apps are scaffolded\""
-  },
-  "pnpm": {
-    "overrides": {
-      "@types/react": "$@types/react",
-      "@types/react-dom": "$@types/react-dom"
-    }
   }
 }
