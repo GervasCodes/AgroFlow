@@ -6,17 +6,5 @@
   "scripts": {
     "dev": "echo \"define per-app dev scripts once apps are scaffolded\"",
     "build": "echo \"define per-app build scripts once apps are scaffolded\""
-  },
-  "pnpm": {
-    "packageExtensions": {
-      "react-router-dom@*": {
-        "peerDependencies": { "@types/react": "*" },
-        "peerDependenciesMeta": { "@types/react": { "optional": true } }
-      },
-      "react-router@*": {
-        "peerDependencies": { "@types/react": "*" },
-        "peerDependenciesMeta": { "@types/react": { "optional": true } }
-      }
-    }
   }
 }
