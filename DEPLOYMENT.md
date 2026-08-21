@@ -295,26 +295,38 @@ configured; email is the addition, not a replacement.
 
 ---
 
-## 7. Turning on the stubbed integrations (optional, do later)
+## 7. Turning on the real integrations (just needs credentials now)
 
-Several pieces were deliberately built to **log instead of calling a
-real paid API**, so you could deploy and use AgroFlow before signing
-up for anything. Turn these on whenever you're ready:
+Mobile money, SMS, and WhatsApp are no longer stubs — they're real
+integrations (AzamPay, Africa's Talking, Meta Cloud API). Each one
+falls back to logging instead of calling out **only** when its
+credentials are missing, so nothing below blocks deployment — fill
+these in whenever you're ready, redeploy the affected service, and the
+logging stops.
 
-- **Mobile money (AzamPay / Selcom / MalipoPay)** — add the real
-  outbound API call in `apps/api/src/services/payments/index.ts`'s
-  `initiatePayment()`, and point that provider's webhook at
-  `POST /api/v1/payments/webhook` with the `PAYMENT_GATEWAY_API_KEY`
-  header.
-- **SMS (Africa's Talking or similar)** — fill in
-  `channels/sms/src/gateway.ts`'s `sendSms()` with the provider's send
-  call, and set `SMS_API_KEY`.
-- **WhatsApp (Meta Cloud API)** — fill in
-  `channels/whatsapp/src/gateway.ts`'s `sendWhatsAppMessage()`, and
-  set `WHATSAPP_ACCESS_TOKEN` / `WHATSAPP_PHONE_NUMBER_ID`. You'll also
-  register the webhook URL (`https://agroflow-whatsapp.onrender.com/webhook`)
-  with Meta and set `WHATSAPP_VERIFY_TOKEN` to match what you enter in
-  their dashboard.
+- **Mobile money (AzamPay)** — set on `agroflow-api`:
+  `AZAMPAY_APP_NAME`, `AZAMPAY_CLIENT_ID`, `AZAMPAY_CLIENT_SECRET`
+  (from your AzamPay merchant dashboard), and `AZAMPAY_WEBHOOK_SECRET`
+  (any random 32+ char string — this is what AzamPay must sign their
+  webhook callbacks with; check their dashboard for how to set/confirm
+  it). Point AzamPay's webhook at
+  `https://agroflow-api.onrender.com/api/v1/payments/webhook/mobile-money`.
+  Leave `AZAMPAY_AUTH_URL`/`AZAMPAY_CHECKOUT_URL` unset to use their
+  sandbox, or set them to AzamPay's production URLs when you're ready
+  to go live.
+- **SMS (Africa's Talking)** — set on `agroflow-sms`: `AT_API_KEY` and
+  `AT_USERNAME` (from your Africa's Talking dashboard). Optionally
+  `AT_SENDER_ID` (a registered shortcode/alphanumeric sender) and
+  `AT_BASE_URL` (defaults to their sandbox -- switch to
+  `https://api.africastalking.com/version1/messaging` for production).
+- **WhatsApp (Meta Cloud API)** — set on `agroflow-whatsapp`:
+  `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, and
+  `WHATSAPP_BUSINESS_ACCOUNT_ID` (all from Meta's App Dashboard). The
+  service calls Meta's API on startup to subscribe itself to receive
+  webhooks — you still separately register
+  `https://agroflow-whatsapp.onrender.com/webhook` as the callback URL
+  in Meta's dashboard and set `WHATSAPP_VERIFY_TOKEN` to match what you
+  enter there.
 - **USSD gateway** — register
   `https://agroflow-ussd.onrender.com/ussd/callback` as your callback
   URL with your chosen Tanzanian USSD aggregator, and set

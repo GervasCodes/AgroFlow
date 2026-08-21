@@ -48,6 +48,18 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
+      - key: AZAMPAY_APP_NAME
+        sync: false
+      - key: AZAMPAY_CLIENT_ID
+        sync: false
+      - key: AZAMPAY_CLIENT_SECRET
+        sync: false
+      - key: AZAMPAY_AUTH_URL
+        sync: false
+      - key: AZAMPAY_CHECKOUT_URL
+        sync: false
+      - key: AZAMPAY_WEBHOOK_SECRET
+        sync: false
 
   - type: web
     name: agroflow-web
@@ -88,7 +100,13 @@ services:
     envVars:
       - key: INTERNAL_SERVICE_SECRET
         sync: false
-      - key: SMS_API_KEY
+      - key: AT_API_KEY
+        sync: false
+      - key: AT_USERNAME
+        sync: false
+      - key: AT_SENDER_ID
+        sync: false
+      - key: AT_BASE_URL
         sync: false
 
   - type: web
@@ -108,5 +126,9 @@ services:
         sync: false
       - key: WHATSAPP_PHONE_NUMBER_ID
         sync: false
+      - key: WHATSAPP_BUSINESS_ACCOUNT_ID
+        sync: false
       - key: WHATSAPP_VERIFY_TOKEN
+        sync: false
+      - key: WHATSAPP_GRAPH_API_VERSION
         sync: false

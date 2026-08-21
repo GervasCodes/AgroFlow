@@ -51,21 +51,27 @@ export function approveRoleRequest(input: {
       },
     });
 
-    await tx.userRole.upsert({
+    // Prisma can't use a compound unique key (userId_roleId_scopeId) to look
+    // this up when scopeId is null -- NULL never equals NULL in SQL, so the
+    // generated type requires a non-null string there. Do the lookup with an
+    // explicit findFirst instead, which handles the null-scope case too.
+    const existingUserRole = await tx.userRole.findFirst({
       where: {
-        userId_roleId_scopeId: {
-          userId: request.userId,
-          roleId: input.roleId,
-          scopeId: request.scopeId ?? null,
-        },
-      },
-      create: {
         userId: request.userId,
         roleId: input.roleId,
         scopeId: request.scopeId,
       },
-      update: {},
     });
+
+    if (!existingUserRole) {
+      await tx.userRole.create({
+        data: {
+          userId: request.userId,
+          roleId: input.roleId,
+          scopeId: request.scopeId,
+        },
+      });
+    }
 
     return request;
   });
