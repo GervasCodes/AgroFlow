@@ -1,11 +1,10 @@
 // Home -- tiles are role-aware: a user sees the tiles for every role
 // they hold (most people have exactly one, but the shape supports
-// more). FARMER gets the original 6-tile set (Section 9.1); BUYER and
-// TRANSPORTER get their own working tiles (Browse, Shipments) pushed
-// from Phase 15; AGGREGATOR/WAREHOUSE_MANAGER/PROCESSOR_EXPORTER/ADMIN
-// don't have mobile screens yet, so they see a generic "AgroFlow"
-// placeholder tile that's honest about it rather than hiding the whole
-// screen -- that's the next companion-screen gap after this phase.
+// more). FARMER gets the original 6-tile set (Section 9.1); BUYER,
+// TRANSPORTER, AGGREGATOR, and WAREHOUSE_MANAGER each get their own
+// working tiles (Phase 6). PROCESSOR_EXPORTER/ADMIN don't have mobile
+// screens yet, so they see a generic "AgroFlow" placeholder tile that's
+// honest about it rather than hiding the whole screen.
 import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
@@ -45,18 +44,17 @@ const FARMER_TILES: Tile[] = [
 ];
 
 const BUYER_TILES: Tile[] = [
-  { key: "browse", label: "Bidhaa Zilizopo", sub: "Browse Produce", icon: LeafIcon, route: "/browse", ready: true },
-  { key: "orders", label: "Maagizo Yangu", sub: "My Orders", icon: HandshakeIcon, route: null, ready: false },
+  { key: "browse", label: "Bidhaa Zilizopo", sub: "Browse Produce", icon: LeafIcon, route: "/buyer", ready: true },
+  { key: "orders", label: "Maagizo Yangu", sub: "My Orders", icon: HandshakeIcon, route: "/buyer", ready: true },
   { key: "payments", label: "Malipo", sub: "Payments", icon: CoinIcon, route: null, ready: false },
 ];
 
 const TRANSPORTER_TILES: Tile[] = [
-  { key: "shipments", label: "Mizigo", sub: "Shipments", icon: TruckIcon, route: "/shipments", ready: true },
+  { key: "shipments", label: "Mizigo", sub: "Shipments", icon: TruckIcon, route: "/transporter", ready: true },
 ];
 
 const AGGREGATOR_TILES: Tile[] = [
-  { key: "browse", label: "Bidhaa Zilizopo", sub: "Browse Produce", icon: LeafIcon, route: "/browse", ready: true },
-  { key: "inspect", label: "Kagua Ubora", sub: "Inspect Quality", icon: ShieldCheckIcon, route: "/inspect", ready: true },
+  { key: "collect", label: "Mzunguko wa Ukusanyaji", sub: "Collection Run", icon: ShieldCheckIcon, route: "/aggregator", ready: true },
 ];
 
 const WAREHOUSE_TILES: Tile[] = [

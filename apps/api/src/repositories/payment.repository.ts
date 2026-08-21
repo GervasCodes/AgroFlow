@@ -33,3 +33,7 @@ export function markConfirmed(id: string, providerReference: string) {
 export function markFailed(id: string) {
   return prisma.payment.update({ where: { id }, data: { status: "FAILED" } });
 }
+
+export function setProviderReference(id: string, providerReference: string) {
+  return prisma.payment.update({ where: { id }, data: { providerReference } });
+}

@@ -9,7 +9,7 @@
 import "dotenv/config";
 import express from "express";
 import { handleMessage } from "./bot.js";
-import { sendWhatsAppMessage } from "./gateway.js";
+import { sendWhatsAppMessage, registerWebhookSubscription } from "./gateway.js";
 
 const app = express();
 app.use(express.json());
@@ -69,4 +69,8 @@ app.post("/webhook", async (req, res) => {
 const PORT = Number(process.env.PORT ?? 4300);
 app.listen(PORT, () => {
   console.log(`AgroFlow WhatsApp service listening on port ${PORT}`);
+  // Best-effort, non-blocking -- a failed subscription call shouldn't
+  // stop the service from starting (the GET /webhook handshake and
+  // outbound sending still work independently of it).
+  registerWebhookSubscription().catch((err) => console.error("Webhook subscription registration failed:", err));
 });

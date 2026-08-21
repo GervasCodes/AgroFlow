@@ -3,9 +3,9 @@
 // field-role users won't have set a password.
 import { useState } from "react";
 import { router } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, Image } from "react-native";
 import { requestOtpSchema } from "@agroflow/validation";
-import { Button, GlassCard, IconTile, Input, LeafIcon } from "@/components";
+import { Button, GlassCard, IconTile, Input } from "@/components";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { apiClient } from "@/services/apiClient";
 import { ApiClientError } from "@agroflow/api-client";
@@ -40,7 +40,7 @@ export default function PhoneEntryScreen() {
       <View style={styles.container}>
         <View style={styles.brandRow}>
           <IconTile size="sm">
-            <LeafIcon size={16} />
+            <Image source={require("../../assets/brand-mark.png")} style={styles.brandMark} resizeMode="contain" />
           </IconTile>
           <Text style={styles.brandText}>AgroFlow</Text>
         </View>
@@ -75,6 +75,7 @@ export default function PhoneEntryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, justifyContent: "center", gap: 24 },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  brandMark: { width: 16, height: 16 },
   brandText: { fontFamily: fonts.display, fontSize: 18, color: colors.leaf[900] },
   card: { gap: 4 },
   eyebrow: { fontFamily: fonts.sansSemibold, fontSize: 12, letterSpacing: 1.5, color: colors.harvest[700] },

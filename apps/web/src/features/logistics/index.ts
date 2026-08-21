@@ -1,4 +1,2 @@
-// "logistics" feature module for the web app. Primary users: buyers,
-// aggregators, warehouse managers, transporter dispatch and admins --
-// desk-based roles with reliable connectivity (Section 6/7).
-export {};
+// "logistics" feature module -- dispatch board + storage bookings.
+export { LogisticsPage } from "./pages/LogisticsPage";

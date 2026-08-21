@@ -178,7 +178,7 @@ for each one during Blueprint creation:
 | `SMS_NOTIFY_URL` | api | `https://agroflow-sms.onrender.com/notify` (fill in after the sms service's URL is known) |
 | `VITE_API_BASE_URL` | web | `https://agroflow-api.onrender.com/api/v1` (the api service's URL + `/api/v1`) |
 | `AGROFLOW_API_URL` | ussd, whatsapp | `https://agroflow-api.onrender.com/api/v1` |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_FROM` | api | Your Brevo credentials — see §6 |
+| `BREVO_API_KEY` (or `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD`) + `SMTP_FROM` | api | Your Brevo credentials — see §6 |
 | `SMS_API_KEY`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` | sms, whatsapp | Leave blank for now — see §7 |
 
 `JWT_SECRET` and `JWT_REFRESH_SECRET` are generated automatically by
@@ -245,15 +245,18 @@ propagates. Do this for `agroflow-web` at minimum (e.g.
 
 ---
 
-## 6. Set up Brevo for email
+## 6. Set up Brevo for email and OTP delivery
 
-AgroFlow's `apps/api/src/services/email` sends through SMTP using
-whatever provider you configure — this section wires it to Brevo,
-which has the most generous free tier for a project this size (300
-emails/day, forever, no credit card).
+AgroFlow's `apps/api/src/services/email` sends through Brevo -- either
+Brevo's REST API (preferred: works even if your host blocks outbound
+SMTP ports) or Brevo's SMTP relay. It backs two real flows already
+wired in: the OTP code sent on login (`services/auth`'s `requestOtp`,
+in addition to SMS) and a welcome email on registration -- both only
+fire if the account has an email on file (`email` is an optional field
+on `/auth/register`).
 
 1. Sign up at [brevo.com](https://www.brevo.com) — free tier, no card
-   required.
+   required (300 emails/day, forever).
 2. **Verify a sender.** Brevo won't relay mail from an address it
    hasn't confirmed. Go to **Senders, Domains & Dedicated IPs →
    Senders → Add a Sender**, enter an email address you control (e.g.
@@ -262,27 +265,33 @@ emails/day, forever, no credit card).
    - For better deliverability later, you can instead verify your
      whole *domain* (adds DKIM/SPF DNS records) — worth doing once
      you have a real domain, not required to get started.
-3. **Generate an SMTP key.** Go to **SMTP & API** (top-right profile
-   menu) → **SMTP** tab → **Generate a new SMTP key**. Copy it
-   immediately — Brevo only shows the full key once.
-4. Set these on `agroflow-api` in Render (or your local `.env`):
+3. **Get credentials -- pick ONE of these two:**
+   - **REST API (recommended):** top-right profile menu → **SMTP &
+     API** → **API Keys** tab → **Generate a new API key**. Set
+     `BREVO_API_KEY` on `agroflow-api`. This is the one `sendEmail()`
+     checks first.
+   - **SMTP relay:** same menu → **SMTP** tab → **Generate a new SMTP
+     key** (copy it immediately -- Brevo only shows it once). Set:
+     ```
+     SMTP_HOST=smtp-relay.brevo.com
+     SMTP_PORT=587
+     SMTP_USER=<your Brevo login email>
+     SMTP_PASSWORD=<the SMTP key you just generated -- NOT your Brevo account password>
+     ```
+4. Either way, also set:
    ```
-   SMTP_HOST=smtp-relay.brevo.com
-   SMTP_PORT=587
-   SMTP_USER=<your Brevo login email>
-   SMTP_PASSWORD=<the SMTP key you just generated -- NOT your Brevo account password>
    SMTP_FROM=AgroFlow <no-reply@yourdomain.com>
    ```
-   (Use the exact sender address you verified in step 2 for
-   `SMTP_FROM`, or mail will be rejected.)
+   (Use the exact sender address you verified in step 2, or mail will
+   be rejected -- this applies whether you're sending via the API or
+   SMTP.)
 5. Redeploy `agroflow-api` (or restart it) to pick up the new env
    vars.
 
-That's it — `sendEmail()` in `apps/api/src/services/email/index.ts`
-will now actually send instead of logging. AgroFlow doesn't have an
-email-triggered flow built yet (auth is phone/OTP-based, notifications
-go through SMS/WhatsApp), so this is ready for whenever you add one —
-e.g. a password-reset flow, or a daily digest for desk-role users.
+That's it — OTP codes and the welcome email will now actually send
+instead of logging. SMS delivery of the OTP code (via `channels/sms`,
+see §7) is independent of this and works whether or not Brevo is
+configured; email is the addition, not a replacement.
 
 ---
 

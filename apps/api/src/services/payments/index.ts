@@ -1,16 +1,22 @@
-// Business logic for the "payments" domain. Provider-agnostic by
-// design (see database/prisma/schema.prisma's FINANCE section): NO live
-// AzamPay/Selcom/MalipoPay API call happens in initiatePayment() --  it
-// only records intent and returns instructions for the buyer to
-// complete the mobile money prompt on their phone, matching how STK-push
-// mobile money flows actually feel to the end user in Tanzania. Real
-// integration later means adding one outbound API call here per
-// provider; confirmWebhook() and the schema don't need to change.
+// Business logic for the "payments" domain. initiatePayment() now makes
+// a real outbound call to the mobile-money gateway (see
+// integrations/mobile-money) instead of only recording intent -- see
+// that file for why AzamPay was chosen and its fallback-to-log behaviour
+// when unconfigured. confirmPayment() (internal/manual) and
+// confirmPaymentFromWebhook() (real gateway callback, signature-verified
+// + idempotent) both end at the same PAID transition so the rest of the
+// system doesn't care which path a given payment took.
 import type { AuthenticatedUser } from "@agroflow/types";
 import type { InitiatePaymentInput } from "@agroflow/validation";
-import { paymentRepository, purchaseOrderRepository, userRepository } from "../../repositories/index.js";
+import {
+  paymentRepository,
+  paymentTransactionRepository,
+  purchaseOrderRepository,
+  userRepository,
+} from "../../repositories/index.js";
 import { AppError } from "../../utils/AppError.js";
 import { notify } from "../notifications/index.js";
+import { mobileMoneyGateway, type WebhookEvent } from "../../integrations/mobile-money/index.js";
 
 export function listMyPayments(user: AuthenticatedUser) {
   return paymentRepository.findPaymentsForPayer(user.id);
@@ -34,21 +40,47 @@ export async function initiatePayment(user: AuthenticatedUser, input: InitiatePa
     provider: input.provider,
   });
 
+  // payment.id doubles as the idempotency key AzamPay is given
+  // (externalId) -- a retried initiate() for the same Payment can never
+  // create two charges on their side.
+  const charge = await mobileMoneyGateway.initiateCharge({
+    provider: input.provider,
+    amount: payment.amount,
+    currency: payment.currency,
+    phoneNumber: user.phoneNumber,
+    externalId: payment.id,
+  });
+
+  await paymentTransactionRepository.recordTransaction({
+    paymentId: payment.id,
+    type: "INITIATION",
+    status: charge.status === "FAILED" ? "FAILED" : "PENDING",
+    providerReference: charge.providerReference,
+    rawPayload: charge.rawResponse,
+  });
+
+  if (charge.status === "FAILED") {
+    const failed = await paymentRepository.markFailed(payment.id);
+    return {
+      payment: failed,
+      instructions: "We couldn't start the payment with your provider. Please try again.",
+    };
+  }
+
+  if (charge.providerReference) {
+    await paymentRepository.setProviderReference(payment.id, charge.providerReference);
+  }
+
   return {
     payment,
-    // No live gateway call is made -- this instruction mirrors the
-    // real STK-push UX (a prompt appears on the payer's phone) so the
-    // web/mobile UI has something honest to show while a real provider
-    // integration isn't wired up yet.
+    // Mirrors the real STK-push UX (a prompt appears on the payer's
+    // phone) -- honest whether the gateway is live or (in dev, when
+    // AzamPay isn't configured) simulated.
     instructions: `Check your phone for a payment prompt from ${input.provider.replaceAll("_", " ")}, or dial the provider's USSD code to complete payment.`,
   };
 }
 
-/** Called by the generic webhook receiver (requirePaymentWebhookSecret
- * gates the route) once a real gateway is wired up to POST here on
- * payment confirmation. Marks the payment CONFIRMED and the linked
- * PurchaseOrder PAID. */
-export async function confirmPayment(paymentId: string, providerReference: string) {
+async function applyConfirmation(paymentId: string, providerReference: string) {
   const payment = await paymentRepository.findPaymentById(paymentId);
   if (!payment) throw AppError.notFound("Payment not found");
   if (payment.status === "CONFIRMED") return payment; // idempotent
@@ -68,8 +100,46 @@ export async function confirmPayment(paymentId: string, providerReference: strin
   return confirmed;
 }
 
+/** Manual/internal confirmation path -- gated by requirePaymentWebhookSecret
+ * (see routes/payments.routes.ts), used for testing or a gateway that
+ * hasn't been given real signature verification yet. */
+export async function confirmPayment(paymentId: string, providerReference: string) {
+  return applyConfirmation(paymentId, providerReference);
+}
+
 export async function failPayment(paymentId: string) {
   const payment = await paymentRepository.findPaymentById(paymentId);
   if (!payment) throw AppError.notFound("Payment not found");
   return paymentRepository.markFailed(paymentId);
+}
+
+/** Real AzamPay webhook path -- signature already verified by
+ * middleware/mobileMoneySignature.ts before this runs. Idempotent via
+ * PaymentTransaction: a providerReference we've already recorded a
+ * CALLBACK for is not reprocessed, so a retried/duplicated webhook
+ * delivery (gateways retry aggressively) can never double-apply. */
+export async function confirmPaymentFromWebhook(event: WebhookEvent) {
+  const alreadyProcessed = await paymentTransactionRepository.findCallbackByProviderReference(
+    event.providerReference,
+  );
+  if (alreadyProcessed) return { deduplicated: true };
+
+  // externalId is the Payment.id we sent as AzamPay's externalId at
+  // initiation time (see initiatePayment above).
+  const payment = await paymentRepository.findPaymentById(event.externalId);
+  if (!payment) throw AppError.notFound("Payment not found for this webhook's externalId");
+
+  await paymentTransactionRepository.recordTransaction({
+    paymentId: payment.id,
+    type: "CALLBACK",
+    status: event.status === "CONFIRMED" ? "CONFIRMED" : "FAILED",
+    providerReference: event.providerReference,
+    rawPayload: event.rawPayload,
+  });
+
+  if (event.status === "CONFIRMED") {
+    return { deduplicated: false, payment: await applyConfirmation(payment.id, event.providerReference) };
+  }
+
+  return { deduplicated: false, payment: await paymentRepository.markFailed(payment.id) };
 }

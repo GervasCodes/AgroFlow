@@ -4,6 +4,17 @@
 // pricing is per-segment, ~160 chars per segment).
 import { sendSms } from "./gateway.js";
 
+export interface OtpCodeData {
+  code: string;
+  expiresInMinutes: number;
+}
+export function notifyOtpCode(phoneNumber: string, data: OtpCodeData) {
+  return sendSms(
+    phoneNumber,
+    `AgroFlow: Nambari yako ni ${data.code}. Inaisha baada ya dakika ${data.expiresInMinutes}. (Your code: ${data.code}, expires in ${data.expiresInMinutes} min.)`,
+  );
+}
+
 export interface MatchProposedData {
   cropLabel: string;
   quantity: number;

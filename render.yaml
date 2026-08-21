@@ -36,6 +36,8 @@ services:
         sync: false
       - key: SMS_NOTIFY_URL
         sync: false
+      - key: BREVO_API_KEY
+        sync: false
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT

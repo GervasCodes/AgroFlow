@@ -12,10 +12,12 @@ import "dotenv/config";
 import express from "express";
 import { requireInternalServiceSecret } from "./auth.js";
 import {
+  notifyOtpCode,
   notifyMatchProposed,
   notifyMatchApproved,
   notifyPaymentConfirmed,
   notifyShipmentDelivered,
+  type OtpCodeData,
   type MatchProposedData,
   type MatchApprovedData,
   type PaymentConfirmedData,
@@ -29,6 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 type NotifyBody =
+  | { phoneNumber: string; type: "otp_code"; data: OtpCodeData }
   | { phoneNumber: string; type: "match_proposed"; data: MatchProposedData }
   | { phoneNumber: string; type: "match_approved"; data: MatchApprovedData }
   | { phoneNumber: string; type: "payment_confirmed"; data: PaymentConfirmedData }
@@ -39,6 +42,9 @@ app.post("/notify", requireInternalServiceSecret, async (req, res) => {
 
   try {
     switch (body.type) {
+      case "otp_code":
+        await notifyOtpCode(body.phoneNumber, body.data);
+        break;
       case "match_proposed":
         await notifyMatchProposed(body.phoneNumber, body.data);
         break;

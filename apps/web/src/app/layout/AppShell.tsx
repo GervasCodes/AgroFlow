@@ -5,12 +5,32 @@
 // Phase 4 ships only "Overview", the rest light up as their domains do.
 import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { IconTile, LeafIcon, ChartIcon, UserIcon, FarmIcon, HandshakeIcon, TruckIcon, WarehouseIcon, CoinIcon } from "@/components/ui";
+import {
+  IconTile,
+  LeafIcon,
+  ChartIcon,
+  UserIcon,
+  FarmIcon,
+  HandshakeIcon,
+  TruckIcon,
+  WarehouseIcon,
+  CoinIcon,
+  StackIcon,
+  ShieldCheckIcon,
+} from "@/components/ui";
 import { useAuth } from "@/app/providers";
 import { useRole } from "@/hooks/useRole";
+import { DESK_ROLES, type RoleName } from "@agroflow/config";
+import { RoleSwitcher } from "./RoleSwitcher";
 import { cn } from "@/lib/cn";
 
-const NAV_ITEMS = [
+const NAV_ITEMS: {
+  to: string;
+  label: string;
+  icon: typeof ChartIcon;
+  permission: string | null;
+  roles?: readonly RoleName[];
+}[] = [
   { to: "/", label: "Overview", icon: ChartIcon, permission: null },
   { to: "/farms", label: "Farms", icon: FarmIcon, permission: "farm:read" },
   { to: "/produce", label: "Produce", icon: LeafIcon, permission: "produce_listing:read" },
@@ -18,17 +38,25 @@ const NAV_ITEMS = [
   { to: "/matches", label: "Matches", icon: HandshakeIcon, permission: "match:read" },
   { to: "/orders", label: "Orders", icon: HandshakeIcon, permission: "purchase_order:read" },
   { to: "/shipments", label: "Shipments", icon: TruckIcon, permission: "shipment:read" },
+  { to: "/logistics", label: "Logistics", icon: TruckIcon, permission: "storage_booking:read" },
+  { to: "/aggregation", label: "Aggregation", icon: StackIcon, permission: "inventory:read" },
   { to: "/warehouses", label: "Warehouses", icon: WarehouseIcon, permission: "warehouse:read" },
   { to: "/payments", label: "Payments", icon: CoinIcon, permission: "payment:read" },
+  { to: "/reports", label: "Reports", icon: ChartIcon, permission: null, roles: DESK_ROLES },
+  { to: "/admin", label: "Admin", icon: ShieldCheckIcon, permission: "role:approve" },
   { to: "/profile", label: "Profile", icon: UserIcon, permission: null },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
-  const { hasPermission } = useRole();
+  const { hasPermission, hasAnyRole } = useRole();
   const location = useLocation();
 
-  const visibleItems = NAV_ITEMS.filter((item) => !item.permission || hasPermission(item.permission));
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (item.permission && !hasPermission(item.permission)) return false;
+    if (item.roles && !hasAnyRole(...item.roles)) return false;
+    return true;
+  });
 
   return (
     <div className="min-h-dvh w-full lg:flex">
@@ -38,10 +66,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span className="glass-edge-highlight" aria-hidden="true" />
           <div className="mb-8 flex items-center gap-3">
             <IconTile size="sm">
-              <LeafIcon size={16} />
+              <img src="/brand/agroflow-mark.png" alt="AgroFlow" className="h-5 w-5 object-contain" />
             </IconTile>
             <span className="font-display text-lg font-semibold text-leaf-900">AgroFlow</span>
           </div>
+
+          <RoleSwitcher className="mb-6" />
 
           <nav className="flex flex-1 flex-col gap-1">
             {visibleItems.map((item) => {

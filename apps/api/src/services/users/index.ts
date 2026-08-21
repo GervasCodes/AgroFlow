@@ -36,3 +36,8 @@ export async function getUserOrThrow(userId: string): Promise<UserWithRoles> {
   if (!user) throw AppError.notFound("User not found");
   return user;
 }
+
+/** Admin Console's user list (verify users / monitor activity). */
+export function listUsers() {
+  return userRepository.findAllUsers();
+}

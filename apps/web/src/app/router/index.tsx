@@ -16,6 +16,11 @@ import { PurchaseOrdersPage } from "@/features/orders";
 import { ShipmentsPage, RequestShipmentPage } from "@/features/shipments";
 import { WarehousesPage } from "@/features/warehouses";
 import { PayOrderPage, PaymentsPage } from "@/features/payments";
+import { LogisticsPage } from "@/features/logistics";
+import { AggregationPage } from "@/features/aggregation";
+import { AnalyticsPage } from "@/features/analytics";
+import { AdminConsolePage } from "@/features/admin";
+import { ProfilePage } from "@/features/profile";
 import { AppShell } from "@/app/layout/AppShell";
 import { ProtectedRoute } from "./ProtectedRoute";
 
@@ -46,6 +51,11 @@ const router = createBrowserRouter([
   { path: "/warehouses", element: withShell(<WarehousesPage />) },
   { path: "/payments", element: withShell(<PaymentsPage />) },
   { path: "/payments/pay/:purchaseOrderId", element: withShell(<PayOrderPage />) },
+  { path: "/logistics", element: withShell(<LogisticsPage />) },
+  { path: "/aggregation", element: withShell(<AggregationPage />) },
+  { path: "/reports", element: withShell(<AnalyticsPage />) },
+  { path: "/admin", element: withShell(<AdminConsolePage />) },
+  { path: "/profile", element: withShell(<ProfilePage />) },
 ]);
 
 export function AppRouter() {

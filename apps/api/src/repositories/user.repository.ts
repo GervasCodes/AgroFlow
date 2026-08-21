@@ -28,10 +28,28 @@ export function findUserByPhone(phoneNumber: string) {
   });
 }
 
+export function findUserByEmail(email: string) {
+  return prisma.user.findUnique({
+    where: { email },
+    include: userWithRolesInclude,
+  });
+}
+
 export function findUserById(id: string) {
   return prisma.user.findUnique({
     where: { id },
     include: userWithRolesInclude,
+  });
+}
+
+/** Admin-only listing (see routes/users.routes.ts) -- most recent
+ * accounts first, capped rather than paginated since the Admin Console
+ * is the only caller today. */
+export function findAllUsers() {
+  return prisma.user.findMany({
+    include: userWithRolesInclude,
+    orderBy: { createdAt: "desc" },
+    take: 200,
   });
 }
 
@@ -41,7 +59,7 @@ export function createUser(input: {
   passwordHash?: string;
   preferredLanguage: "en" | "sw";
   regionId?: string;
-  roleId: string;
+  email?: string;
 }) {
   return prisma.user.create({
     data: {
@@ -50,9 +68,9 @@ export function createUser(input: {
       passwordHash: input.passwordHash,
       preferredLanguage: input.preferredLanguage,
       regionId: input.regionId,
-      roles: {
-        create: [{ roleId: input.roleId }],
-      },
+      email: input.email,
+      // No roles created here by design -- registration no longer accepts
+      // a self-selected role. See role-request.repository.ts.
     },
     include: userWithRolesInclude,
   });
@@ -60,4 +78,8 @@ export function createUser(input: {
 
 export function markUserVerified(userId: string) {
   return prisma.user.update({ where: { id: userId }, data: { isVerified: true } });
+}
+
+export function updatePreferredChannel(userId: string, preferredChannel: string) {
+  return prisma.user.update({ where: { id: userId }, data: { preferredChannel } });
 }

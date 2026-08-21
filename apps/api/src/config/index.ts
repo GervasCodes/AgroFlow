@@ -25,6 +25,28 @@ const envSchema = z.object({
   // webhook here with this key. Same optional-but-gated pattern as
   // USSD_GATEWAY_API_KEY.
   PAYMENT_GATEWAY_API_KEY: z.string().min(16).optional(),
+  // AzamPay mobile-money adapter (see integrations/mobile-money) --
+  // all optional so the API still boots without real credentials;
+  // initiateCharge() logs instead of calling out when unset.
+  AZAMPAY_APP_NAME: z.string().optional(),
+  AZAMPAY_CLIENT_ID: z.string().optional(),
+  AZAMPAY_CLIENT_SECRET: z.string().optional(),
+  AZAMPAY_AUTH_URL: z.string().url().optional(),
+  AZAMPAY_CHECKOUT_URL: z.string().url().optional(),
+  // Shared secret used to HMAC-verify AzamPay's webhook callback body
+  // (middleware/mobileMoneySignature.ts) -- separate from
+  // PAYMENT_GATEWAY_API_KEY, which guards the older static-secret route.
+  AZAMPAY_WEBHOOK_SECRET: z.string().min(16).optional(),
+  // Outbound email (services/email) -- provider is Brevo. BREVO_API_KEY
+  // (Brevo's REST API, preferred) or the SMTP_* vars (Brevo's SMTP
+  // relay, or any other SMTP-compatible provider) -- either is enough;
+  // neither set and sendEmail() logs instead of sending.
+  BREVO_API_KEY: z.string().optional(),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

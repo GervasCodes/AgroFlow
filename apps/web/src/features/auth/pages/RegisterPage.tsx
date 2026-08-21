@@ -1,24 +1,22 @@
-// Registration page -- name, phone, password, role and region. Role
-// options are every RoleName (Section 2 Personas) since the same
-// backend/account model serves field and desk roles alike; the sidebar
-// shown after login (Phase 5) is what actually differs by role, not
-// who's allowed to sign up on the web.
+// Registration page -- name, phone, password and region only. Role is no
+// longer chosen at signup (security hardening, Phase 1): every new
+// account starts with zero roles, and a role is requested afterwards
+// from inside the app and approved by an ADMIN (Phase 5's Admin Console).
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerSchema } from "@agroflow/validation";
-import { ROLES, ROLE_LABELS, REGIONS, type RoleName, type RegionName } from "@agroflow/config";
+import { REGIONS, type RegionName } from "@agroflow/config";
 import { Button, Input, Select } from "@/components/ui";
 import { useAuth } from "@/app/providers";
 import { AuthLayout } from "./AuthLayout";
 import { ApiClientError } from "@agroflow/api-client";
 
-const roleOptions = ROLES.map((role) => ({ value: role, label: ROLE_LABELS[role] }));
 const regionOptions = REGIONS.map((region) => ({
   value: region,
   label: region.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()),
 }));
 
-type FieldErrors = Partial<Record<"fullName" | "phoneNumber" | "password" | "role" | "regionId", string>>;
+type FieldErrors = Partial<Record<"fullName" | "phoneNumber" | "password" | "email" | "regionId", string>>;
 
 export function RegisterPage() {
   const { register } = useAuth();
@@ -27,7 +25,7 @@ export function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<RoleName | "">("");
+  const [email, setEmail] = useState("");
   const [regionId, setRegionId] = useState<RegionName | "">("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -41,7 +39,7 @@ export function RegisterPage() {
       fullName,
       phoneNumber,
       password,
-      role: role || undefined,
+      email: email || undefined,
       regionId: regionId || undefined,
       preferredLanguage: "sw",
     });
@@ -52,7 +50,7 @@ export function RegisterPage() {
         fullName: flat.fullName?.[0],
         phoneNumber: flat.phoneNumber?.[0],
         password: flat.password?.[0],
-        role: flat.role?.[0],
+        email: flat.email?.[0],
         regionId: flat.regionId?.[0],
       });
       return;
@@ -74,7 +72,7 @@ export function RegisterPage() {
     <AuthLayout
       eyebrow="Jiunge nasi"
       title="Create your account"
-      subtitle="Tell us who you are so we can set up the right workspace."
+      subtitle="We'll set up your workspace -- you can request your role once you're in."
       footer={
         <>
           Already have an account?{" "}
@@ -116,13 +114,16 @@ export function RegisterPage() {
           error={fieldErrors.password}
           hint="Use a mix of letters and numbers."
         />
-        <Select
-          label="I am a..."
-          placeholder="Select your role"
-          options={roleOptions}
-          value={role}
-          onChange={(e) => setRole(e.target.value as RoleName)}
-          error={fieldErrors.role}
+        <Input
+          label="Email (optional)"
+          name="email"
+          type="email"
+          autoComplete="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          error={fieldErrors.email}
+          hint="Used for login codes and updates -- you can add this later too."
         />
         <Select
           label="Region"

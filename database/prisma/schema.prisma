@@ -41,6 +41,8 @@ model User {
   isActive           Boolean   @default(true) @map("is_active")
 
   roles              UserRole[]
+  roleRequests       RoleRequest[]        @relation("RoleRequestApplicant")
+  reviewedRoleRequests RoleRequest[]      @relation("RoleRequestReviewer")
   farms              Farm[]
   otpCodes           OtpCode[]
   refreshTokens      RefreshToken[]
@@ -51,6 +53,17 @@ model User {
   shipmentsAsTransporter Shipment[]
   warehouses             Warehouse[]
   payments               Payment[]
+  reviewsWritten         Review[]              @relation("ReviewAuthor")
+  reviewsReceived        Review[]              @relation("ReviewSubject")
+  disputesRaised         Dispute[]             @relation("DisputeRaisedBy")
+  disputesResolved       Dispute[]             @relation("DisputeResolvedBy")
+  trustScore             TrustScore?
+  agentAssistedActionsAsAgent  AgentAssistedAction[] @relation("AgentAssistedActionAgent")
+  agentAssistedActionsAsSubject AgentAssistedAction[] @relation("AgentAssistedActionFarmer")
+  auditLogs              AuditLog[]
+  settlements            Settlement[]
+  inventoryLots          Inventory[]
+  storageBookings        StorageBooking[]
 
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
@@ -118,6 +131,39 @@ model UserRole {
   @@unique([userId, roleId, scopeId])
   @@index([userId])
   @@map("user_roles")
+}
+
+// Registration no longer lets a user self-select a Role (security
+// hardening -- see apps/api/src/services/auth/index.ts). Instead a user
+// requests a role after registering; an ADMIN (role:approve permission)
+// reviews the request and, on approval, a UserRole row is written.
+// reviewedByUserId + reviewedAt double as the approval/rejection log --
+// a richer generic AuditLog model lands in a later phase.
+enum RoleRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model RoleRequest {
+  id               String            @id @default(uuid())
+  userId           String            @map("user_id")
+  requestedRole    String            @map("requested_role") // RoleName from @agroflow/config
+  scopeId          String?           @map("scope_id") // e.g. a WAREHOUSE_MANAGER's warehouse id
+  status           RoleRequestStatus @default(PENDING)
+  reviewedByUserId String?           @map("reviewed_by_user_id")
+  reviewedAt       DateTime?         @map("reviewed_at")
+  rejectionReason  String?           @map("rejection_reason")
+
+  user             User              @relation("RoleRequestApplicant", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy       User?             @relation("RoleRequestReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@map("role_requests")
 }
 
 // Auth: OTP for phone-based login (field roles) and refresh tokens for
@@ -191,6 +237,7 @@ model Crop {
   farmCrops       FarmCrop[]
   produceListings ProduceListing[]
   demandOrders    DemandOrder[]
+  inventoryLots   Inventory[]
 
   createdAt      DateTime @default(now()) @map("created_at")
 
@@ -350,6 +397,11 @@ model PurchaseOrder {
   items       OrderItem[]
   shipment    Shipment?
   payment     Payment?
+  reviews     Review[]
+  disputes    Dispute[]
+  settlement  Settlement?
+  invoice     Invoice?
+  storageBookings StorageBooking[]
 
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
@@ -473,6 +525,8 @@ model Warehouse {
   currentUtilization Float?   @map("current_utilization") // tonnes currently in use
 
   owner              User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  inventoryLots      Inventory[]
+  storageBookings    StorageBooking[]
 
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
@@ -516,6 +570,8 @@ model Payment {
 
   purchaseOrder     PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   payer             User          @relation(fields: [payerId], references: [id], onDelete: Cascade)
+  transactions      PaymentTransaction[]
+  refunds           Refund[]
 
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
@@ -526,6 +582,349 @@ model Payment {
 }
 
 // ============================================================================
-// CHANNEL / COMMUNICATION / TRUST / AI / ANALYTICS
+// TRUST
 // ============================================================================
-// Add as each phase requires them (see Section 9 and docs/BUILD_ORDER.md).
+// Phase 3 scope: a lightweight reputation layer on top of the Marketplace
+// domain. Review is buyer<->seller feedback left after a PurchaseOrder;
+// Dispute is raised against a PurchaseOrder (mirrors PurchaseOrderStatus's
+// existing DISPUTED value); TrustScore is a rolling per-user aggregate
+// that services/ai reads when ranking match recommendations.
+
+model Review {
+  id              String        @id @default(uuid())
+  purchaseOrderId String        @map("purchase_order_id")
+  authorId        String        @map("author_id")
+  subjectId       String        @map("subject_id") // the user being reviewed
+  rating          Int // 1-5
+  comment         String?
+
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  author          User          @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  subject         User          @relation("ReviewSubject", fields: [subjectId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  @@unique([purchaseOrderId, authorId])
+  @@index([subjectId])
+  @@map("reviews")
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+model Dispute {
+  id               String        @id @default(uuid())
+  purchaseOrderId  String        @map("purchase_order_id")
+  raisedById       String        @map("raised_by_id")
+  reason           String
+  status           DisputeStatus @default(OPEN)
+  resolutionNotes  String?       @map("resolution_notes")
+  resolvedById     String?       @map("resolved_by_id")
+  resolvedAt       DateTime?     @map("resolved_at")
+
+  purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  raisedBy         User          @relation("DisputeRaisedBy", fields: [raisedById], references: [id], onDelete: Cascade)
+  resolvedBy       User?         @relation("DisputeResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  @@index([purchaseOrderId])
+  @@index([status])
+  @@map("disputes")
+}
+
+model TrustScore {
+  id               String   @id @default(uuid())
+  userId           String   @unique @map("user_id")
+  score            Float    @default(50) // 0-100, baseline 50 for a new account
+  completedOrders  Int      @default(0) @map("completed_orders")
+  disputesFiled    Int      @default(0) @map("disputes_filed")
+  disputesAgainst  Int      @default(0) @map("disputes_against")
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("trust_scores")
+}
+
+// ============================================================================
+// CHANNEL / COMMUNICATION
+// ============================================================================
+// USSDSession/SMSMessage/WhatsAppMessage are keyed by phone number, not a
+// User relation -- a field-role person can interact over USSD/SMS before
+// (or without ever) completing registration, matching how those channels
+// actually work. AgentAssistedAction logs a VILLAGE_AGENT acting on
+// behalf of a farmer (see services/auth's "agent-assisted login" note).
+
+model USSDSession {
+  id              String    @id @default(uuid())
+  sessionId       String    @unique @map("session_id") // id assigned by the USSD aggregator
+  phoneNumber     String    @map("phone_number")
+  currentMenu     String    @map("current_menu")
+  context         Json?
+  startedAt       DateTime  @default(now()) @map("started_at")
+  lastActivityAt  DateTime  @updatedAt @map("last_activity_at")
+  endedAt         DateTime? @map("ended_at")
+
+  @@index([phoneNumber])
+  @@map("ussd_sessions")
+}
+
+enum MessageDirection {
+  OUTBOUND
+  INBOUND
+}
+
+enum MessageStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+}
+
+model SMSMessage {
+  id                String           @id @default(uuid())
+  phoneNumber       String           @map("phone_number")
+  direction         MessageDirection @default(OUTBOUND)
+  body              String
+  status            MessageStatus    @default(QUEUED)
+  providerMessageId String?          @map("provider_message_id")
+
+  createdAt         DateTime         @default(now()) @map("created_at")
+
+  @@index([phoneNumber])
+  @@index([status])
+  @@map("sms_messages")
+}
+
+model WhatsAppMessage {
+  id                String           @id @default(uuid())
+  phoneNumber       String           @map("phone_number")
+  direction         MessageDirection @default(OUTBOUND)
+  body              String
+  templateName      String?          @map("template_name")
+  status            MessageStatus    @default(QUEUED)
+  providerMessageId String?          @map("provider_message_id")
+
+  createdAt         DateTime         @default(now()) @map("created_at")
+
+  @@index([phoneNumber])
+  @@index([status])
+  @@map("whatsapp_messages")
+}
+
+model AgentAssistedAction {
+  id         String   @id @default(uuid())
+  agentId    String   @map("agent_id")
+  farmerId   String   @map("farmer_id")
+  actionType String   @map("action_type") // e.g. "REGISTER", "CREATE_LISTING", "LOGIN"
+  metadata   Json?
+
+  agent      User     @relation("AgentAssistedActionAgent", fields: [agentId], references: [id], onDelete: Cascade)
+  farmer     User     @relation("AgentAssistedActionFarmer", fields: [farmerId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([agentId])
+  @@index([farmerId])
+  @@map("agent_assisted_actions")
+}
+
+// ============================================================================
+// ADMIN
+// ============================================================================
+// Generic action log for admin-sensitive operations (dispute resolution,
+// role-request review, etc). RoleRequest's reviewedByUserId/reviewedAt
+// (Phase 1) remains the durable record for that specific flow; AuditLog
+// is the general-purpose trail other admin actions write to from here on.
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String   @map("actor_id")
+  action     String // e.g. "dispute:resolve", "role_request:approve"
+  entityType String   @map("entity_type") // e.g. "Dispute", "RoleRequest"
+  entityId   String?  @map("entity_id")
+  metadata   Json?
+
+  actor      User     @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+// ============================================================================
+// FINANCE (extended)
+// ============================================================================
+// PaymentTransaction is a granular log under a Payment (retries/provider
+// callbacks); Settlement is the platform's payout to a seller once a
+// Payment is CONFIRMED; Invoice/Refund round out the finance trail.
+// All still provider-agnostic, same rationale as Payment above.
+
+enum PaymentTransactionType {
+  INITIATION
+  CALLBACK
+  REVERSAL
+}
+
+model PaymentTransaction {
+  id                String                  @id @default(uuid())
+  paymentId         String                  @map("payment_id")
+  type              PaymentTransactionType
+  status            PaymentStatus
+  providerReference String?                 @map("provider_reference")
+  rawPayload        Json?                   @map("raw_payload")
+
+  payment           Payment                 @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime                @default(now()) @map("created_at")
+
+  @@index([paymentId])
+  @@map("payment_transactions")
+}
+
+enum SettlementStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model Settlement {
+  id              String           @id @default(uuid())
+  purchaseOrderId String           @unique @map("purchase_order_id")
+  sellerId        String           @map("seller_id")
+  amount          Float
+  currency        String           @default("TZS")
+  status          SettlementStatus @default(PENDING)
+  paidAt          DateTime?        @map("paid_at")
+
+  purchaseOrder   PurchaseOrder    @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  seller          User             @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  @@index([sellerId])
+  @@index([status])
+  @@map("settlements")
+}
+
+enum InvoiceStatus {
+  ISSUED
+  PAID
+  VOID
+}
+
+model Invoice {
+  id              String        @id @default(uuid())
+  purchaseOrderId String        @unique @map("purchase_order_id")
+  invoiceNumber   String        @unique @map("invoice_number")
+  amount          Float
+  currency        String        @default("TZS")
+  status          InvoiceStatus @default(ISSUED)
+  issuedAt        DateTime      @default(now()) @map("issued_at")
+  dueAt           DateTime?     @map("due_at")
+
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  @@map("invoices")
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSED
+  REJECTED
+}
+
+model Refund {
+  id          String       @id @default(uuid())
+  paymentId   String       @map("payment_id")
+  amount      Float
+  reason      String?
+  status      RefundStatus @default(PENDING)
+  processedAt DateTime?    @map("processed_at")
+
+  payment     Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  @@index([paymentId])
+  @@map("refunds")
+}
+
+// ============================================================================
+// AGGREGATION
+// ============================================================================
+// Inventory is a bulk lot an AGGREGATOR (or WAREHOUSE_MANAGER) holds after
+// consolidating produce from multiple listings -- services/aggregation's
+// core entity.
+
+model Inventory {
+  id          String     @id @default(uuid())
+  ownerId     String     @map("owner_id")
+  warehouseId String?    @map("warehouse_id")
+  cropId      String     @map("crop_id")
+  quantity    Float
+  unit        String // UnitName from @agroflow/config
+
+  owner       User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  warehouse   Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  crop        Crop       @relation(fields: [cropId], references: [id], onDelete: Restrict)
+
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  @@index([ownerId])
+  @@index([warehouseId])
+  @@map("inventory")
+}
+
+// ============================================================================
+// STORAGE (extended)
+// ============================================================================
+// StorageBooking -- deferred at schema-inception time until Logistics and
+// Finance had something to integrate it with (see the Warehouse model's
+// comment above); services/logistics now owns booking warehouse capacity
+// against a PurchaseOrder.
+
+enum StorageBookingStatus {
+  BOOKED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model StorageBooking {
+  id               String                @id @default(uuid())
+  warehouseId      String                @map("warehouse_id")
+  purchaseOrderId  String?               @map("purchase_order_id")
+  bookedById       String                @map("booked_by_id")
+  quantityTonnes   Float                 @map("quantity_tonnes")
+  startDate        DateTime              @map("start_date")
+  endDate          DateTime?             @map("end_date")
+  status           StorageBookingStatus  @default(BOOKED)
+
+  warehouse        Warehouse             @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  purchaseOrder    PurchaseOrder?        @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+  bookedBy         User                  @relation(fields: [bookedById], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime              @default(now()) @map("created_at")
+  updatedAt        DateTime              @updatedAt @map("updated_at")
+
+  @@index([warehouseId])
+  @@index([status])
+  @@index([bookedById])
+  @@map("storage_bookings")
+}
+

@@ -16,6 +16,15 @@ import type {
   ShipmentWithRelations,
   Warehouse,
   Payment,
+  User,
+  RoleRequest,
+  RoleRequestWithUser,
+  DisputeWithRelations,
+  InventoryWithRelations,
+  StorageBookingWithRelations,
+  ChannelMixEntry,
+  PriceTrendEntry,
+  DisputeRateSummary,
 } from "@agroflow/types";
 import type {
   RegisterInput,
@@ -31,6 +40,13 @@ import type {
   UpdateShipmentStatusInput,
   CreateWarehouseInput,
   InitiatePaymentInput,
+  RequestRoleInput,
+  RejectRoleRequestInput,
+  CreateDisputeInput,
+  ResolveDisputeInput,
+  CreateInventoryInput,
+  UpdateInventoryInput,
+  CreateStorageBookingInput,
 } from "@agroflow/validation";
 
 export interface AuthResult {
@@ -176,6 +192,49 @@ export function createApiClient(options: ApiClientOptions) {
           method: "POST",
           body: JSON.stringify(input),
         }),
+    },
+    roleRequests: {
+      request: (input: RequestRoleInput) =>
+        request<RoleRequest>("/role-requests", { method: "POST", body: JSON.stringify(input) }),
+      listMine: () => request<RoleRequest[]>("/role-requests/mine"),
+      listPending: () => request<RoleRequestWithUser[]>("/role-requests"),
+      approve: (id: string) => request<RoleRequest>(`/role-requests/${id}/approve`, { method: "POST" }),
+      reject: (id: string, input?: RejectRoleRequestInput) =>
+        request<RoleRequest>(`/role-requests/${id}/reject`, { method: "POST", body: JSON.stringify(input ?? {}) }),
+    },
+    users: {
+      list: () => request<User[]>("/users"),
+    },
+    disputes: {
+      create: (input: CreateDisputeInput) =>
+        request<DisputeWithRelations>("/disputes", { method: "POST", body: JSON.stringify(input) }),
+      listMine: () => request<DisputeWithRelations[]>("/disputes/mine"),
+      listOpen: () => request<DisputeWithRelations[]>("/disputes"),
+      resolve: (id: string, input: ResolveDisputeInput) =>
+        request<DisputeWithRelations>(`/disputes/${id}/resolve`, { method: "POST", body: JSON.stringify(input) }),
+    },
+    logistics: {
+      dispatchBoard: () => request<ShipmentWithRelations[]>("/logistics/dispatch-board"),
+      createStorageBooking: (input: CreateStorageBookingInput) =>
+        request<StorageBookingWithRelations>("/logistics/storage-bookings", {
+          method: "POST",
+          body: JSON.stringify(input),
+        }),
+      listMyStorageBookings: () => request<StorageBookingWithRelations[]>("/logistics/storage-bookings/mine"),
+      listWarehouseBookings: (warehouseId: string) =>
+        request<StorageBookingWithRelations[]>(`/logistics/storage-bookings/warehouse/${warehouseId}`),
+    },
+    inventory: {
+      create: (input: CreateInventoryInput) =>
+        request<InventoryWithRelations>("/inventory", { method: "POST", body: JSON.stringify(input) }),
+      listMine: () => request<InventoryWithRelations[]>("/inventory/mine"),
+      updateQuantity: (id: string, input: UpdateInventoryInput) =>
+        request<InventoryWithRelations>(`/inventory/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+    },
+    analytics: {
+      channelMix: () => request<ChannelMixEntry[]>("/analytics/channel-mix"),
+      priceTrends: () => request<PriceTrendEntry[]>("/analytics/price-trends"),
+      disputeRate: () => request<DisputeRateSummary>("/analytics/dispute-rate"),
     },
   };
 }

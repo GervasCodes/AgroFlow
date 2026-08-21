@@ -3,7 +3,7 @@
 // never drift between client and server.
 
 import { z } from "zod";
-import { CROPS, REGIONS, UNITS, QUALITY_GRADES, MOBILE_MONEY_PROVIDERS, ROLES } from "@agroflow/config";
+import { CROPS, REGIONS, UNITS, QUALITY_GRADES, MOBILE_MONEY_PROVIDERS, ROLES, CHANNELS } from "@agroflow/config";
 
 // --- Shared primitives ---------------------------------------------------
 
@@ -28,14 +28,19 @@ export const unitSchema = z.enum(UNITS);
 export const qualityGradeSchema = z.enum(QUALITY_GRADES);
 export const mobileMoneyProviderSchema = z.enum(MOBILE_MONEY_PROVIDERS);
 export const roleNameSchema = z.enum(ROLES);
+export const channelSchema = z.enum(CHANNELS);
 
 // --- Identity --------------------------------------------------------------
 
+// `role` is intentionally NOT part of registration input -- a user can no
+// longer self-select their role (security hardening). New accounts start
+// with zero roles/permissions; see requestRoleSchema below for how a role
+// is obtained afterwards (request -> admin approval).
 export const registerSchema = z.object({
   phoneNumber: tanzaniaPhoneSchema,
   fullName: z.string().trim().min(2, "Enter your full name").max(120),
   password: passwordSchema.optional(), // optional: OTP-only signup for field roles
-  role: roleNameSchema,
+  email: z.string().trim().toLowerCase().email("Enter a valid email address").optional(),
   regionId: regionSchema.optional(),
   preferredLanguage: z.enum(["en", "sw"]).default("sw"),
 });
@@ -57,6 +62,23 @@ export const verifyOtpSchema = z.object({
   code: z.string().length(6, "Enter the 6-digit code"),
 });
 export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
+
+// --- Role requests -----------------------------------------------------------
+// ADMIN can never be self-requested here -- granting the admin role is a
+// manual, out-of-band operation (seed script / direct DB access), not
+// something reachable through the public API surface.
+export const requestRoleSchema = z.object({
+  role: roleNameSchema.refine((role) => role !== "ADMIN", {
+    message: "The ADMIN role cannot be requested through this flow",
+  }),
+  scopeId: z.string().trim().max(120).optional(),
+});
+export type RequestRoleInput = z.infer<typeof requestRoleSchema>;
+
+export const rejectRoleRequestSchema = z.object({
+  reason: z.string().trim().max(500).optional(),
+});
+export type RejectRoleRequestInput = z.infer<typeof rejectRoleRequestSchema>;
 
 // --- Agriculture -------------------------------------------------------------
 
@@ -149,6 +171,60 @@ export const initiatePaymentSchema = z.object({
   provider: mobileMoneyProviderSchema,
 });
 export type InitiatePaymentInput = z.infer<typeof initiatePaymentSchema>;
+
+// --- Trust (Review / Dispute) -------------------------------------------------
+
+export const createReviewSchema = z.object({
+  purchaseOrderId: z.string().uuid(),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().trim().max(500).optional(),
+});
+export type CreateReviewInput = z.infer<typeof createReviewSchema>;
+
+export const createDisputeSchema = z.object({
+  purchaseOrderId: z.string().uuid(),
+  reason: z.string().trim().min(5, "Describe the issue in a bit more detail").max(500),
+});
+export type CreateDisputeInput = z.infer<typeof createDisputeSchema>;
+
+export const resolveDisputeSchema = z.object({
+  status: z.enum(["RESOLVED", "DISMISSED"]),
+  resolutionNotes: z.string().trim().max(500).optional(),
+});
+export type ResolveDisputeInput = z.infer<typeof resolveDisputeSchema>;
+
+// --- Aggregation (Inventory) ---------------------------------------------------
+
+export const createInventorySchema = z.object({
+  crop: cropSchema,
+  quantity: z.number().positive(),
+  unit: unitSchema,
+  warehouseId: z.string().uuid().optional(),
+});
+export type CreateInventoryInput = z.infer<typeof createInventorySchema>;
+
+export const updateInventorySchema = z.object({
+  quantity: z.number().positive(),
+});
+export type UpdateInventoryInput = z.infer<typeof updateInventorySchema>;
+
+// --- Logistics (Storage bookings) ----------------------------------------------
+
+export const createStorageBookingSchema = z.object({
+  warehouseId: z.string().uuid(),
+  purchaseOrderId: z.string().uuid().optional(),
+  quantityTonnes: z.number().positive(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date().optional(),
+});
+export type CreateStorageBookingInput = z.infer<typeof createStorageBookingSchema>;
+
+// --- Notifications ---------------------------------------------------------
+
+export const updateNotificationPreferencesSchema = z.object({
+  preferredChannel: channelSchema,
+});
+export type UpdateNotificationPreferencesInput = z.infer<typeof updateNotificationPreferencesSchema>;
 
 // --- Pagination / query helpers ----------------------------------------------
 

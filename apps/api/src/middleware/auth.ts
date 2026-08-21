@@ -14,6 +14,10 @@ declare global {
   namespace Express {
     interface Request {
       user?: AuthenticatedUser;
+      /** Raw request body bytes, captured by app.ts's express.json({ verify })
+       * for routes that need to verify a webhook signature over the exact
+       * bytes received (see middleware/mobileMoneySignature.ts). */
+      rawBody?: Buffer;
     }
   }
 }

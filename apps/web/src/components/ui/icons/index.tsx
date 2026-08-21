@@ -187,3 +187,41 @@ export function ChartIcon({ size, ...props }: IconProps) {
     </svg>
   );
 }
+
+export function StackIcon({ size, ...props }: IconProps) {
+  return (
+    <svg {...base(size)} {...props}>
+      <defs>
+        <linearGradient id="stackGrad" x1="2" y1="20" x2="22" y2="4" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#5A3B26" />
+          <stop offset="1" stopColor="#E3A82E" />
+        </linearGradient>
+      </defs>
+      <rect x="4" y="14" width="16" height="6" rx="1.4" fill="url(#stackGrad)" />
+      <rect x="5.5" y="8.5" width="13" height="6" rx="1.4" fill="url(#stackGrad)" opacity="0.85" />
+      <rect x="7" y="3.5" width="10" height="6" rx="1.4" fill="url(#stackGrad)" opacity="0.7" />
+      <path d="M6 17h2M6 11.5h2" stroke="rgba(255,255,255,0.6)" strokeWidth="1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function SwitchIcon({ size, ...props }: IconProps) {
+  return (
+    <svg {...base(size)} {...props}>
+      <defs>
+        <linearGradient id="switchGrad" x1="3" y1="19" x2="21" y2="5" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#164825" />
+          <stop offset="1" stopColor="#87C98E" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M4 9h13.5M17.5 9 14 5.5M20 15H6.5M6.5 15 10 18.5"
+        stroke="url(#switchGrad)"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </svg>
+  );
+}

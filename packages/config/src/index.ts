@@ -60,6 +60,10 @@ export const RESOURCES = [
   "payment",
   "user",
   "role",
+  "dispute",
+  "review",
+  "inventory",
+  "storage_booking",
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -182,6 +186,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleName, string[]> = {
     permissionKey("quality_inspection", "read"),
     permissionKey("shipment", "read"),
     permissionKey("payment", "read"),
+    permissionKey("dispute", "create"),
+    permissionKey("dispute", "read"),
+    permissionKey("review", "create"),
+    permissionKey("review", "read"),
   ],
   BUYER: [
     permissionKey("demand_order", "create"),
@@ -197,6 +205,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleName, string[]> = {
     permissionKey("quality_inspection", "read"),
     permissionKey("shipment", "create"),
     permissionKey("shipment", "read"),
+    permissionKey("dispute", "create"),
+    permissionKey("dispute", "read"),
+    permissionKey("review", "create"),
+    permissionKey("review", "read"),
   ],
   AGGREGATOR: [
     permissionKey("produce_listing", "read"),
@@ -206,11 +218,19 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleName, string[]> = {
     permissionKey("quality_inspection", "create"),
     permissionKey("quality_inspection", "read"),
     permissionKey("payment", "read"),
+    permissionKey("inventory", "create"),
+    permissionKey("inventory", "read"),
+    permissionKey("inventory", "update"),
+    permissionKey("storage_booking", "create"),
+    permissionKey("storage_booking", "read"),
+    permissionKey("review", "read"),
   ],
   TRANSPORTER: [
     permissionKey("shipment", "read"),
     permissionKey("shipment", "update"),
     permissionKey("purchase_order", "read"),
+    permissionKey("storage_booking", "read"),
+    permissionKey("dispute", "read"),
   ],
   WAREHOUSE_MANAGER: [
     permissionKey("warehouse", "create"),
@@ -218,6 +238,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleName, string[]> = {
     permissionKey("warehouse", "update"),
     permissionKey("purchase_order", "read"),
     permissionKey("shipment", "read"),
+    permissionKey("inventory", "read"),
+    permissionKey("storage_booking", "create"),
+    permissionKey("storage_booking", "read"),
+    permissionKey("storage_booking", "update"),
   ],
   PROCESSOR_EXPORTER: [
     permissionKey("demand_order", "create"),
@@ -225,6 +249,11 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleName, string[]> = {
     permissionKey("purchase_order", "create"),
     permissionKey("purchase_order", "read"),
     permissionKey("quality_inspection", "read"),
+    permissionKey("dispute", "create"),
+    permissionKey("dispute", "read"),
+    permissionKey("review", "create"),
+    permissionKey("review", "read"),
+    permissionKey("inventory", "read"),
   ],
   VILLAGE_AGENT: [
     permissionKey("farm", "create"),

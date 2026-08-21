@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import * as paymentsService from "../services/payments/index.js";
+import { mobileMoneyGateway } from "../integrations/mobile-money/index.js";
 import type { ApiSuccess } from "@agroflow/types";
 
 function ok<T>(res: Response, data: T, status = 200) {
@@ -15,8 +16,10 @@ export async function initiate(req: Request, res: Response) {
   ok(res, await paymentsService.initiatePayment(req.user!, req.body), 201);
 }
 
-/** Webhook target -- authenticated by requirePaymentWebhookSecret, NOT
- * requireAuth, so there is no req.user here (see routes/payments.routes.ts). */
+/** Legacy/manual webhook target -- authenticated by
+ * requirePaymentWebhookSecret, NOT requireAuth, so there is no req.user
+ * here (see routes/payments.routes.ts). Kept for internal testing; the
+ * real AzamPay callback lands on `webhookFromGateway` below instead. */
 export async function webhook(req: Request, res: Response) {
   const { paymentId, status, providerReference } = req.body as {
     paymentId: string;
@@ -29,4 +32,12 @@ export async function webhook(req: Request, res: Response) {
   } else {
     ok(res, await paymentsService.failPayment(paymentId));
   }
+}
+
+/** Real AzamPay webhook target -- authenticated by
+ * requireMobileMoneySignature (HMAC over the raw body), NOT requireAuth
+ * or the static shared secret above. */
+export async function webhookFromGateway(req: Request, res: Response) {
+  const event = mobileMoneyGateway.parseWebhookPayload(req.body as Record<string, unknown>);
+  ok(res, await paymentsService.confirmPaymentFromWebhook(event));
 }

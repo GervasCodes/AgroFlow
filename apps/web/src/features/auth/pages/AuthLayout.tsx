@@ -3,7 +3,7 @@
 // hero panel on the left carrying the brand moment, form on the right.
 // Mobile-first: the hero pane is `hidden` below lg, never squeezed.
 import type { ReactNode } from "react";
-import { GlassCard, IconTile, LeafIcon } from "@/components/ui";
+import { GlassCard, IconTile } from "@/components/ui";
 
 export function AuthLayout({
   eyebrow,
@@ -34,7 +34,7 @@ export function AuthLayout({
       <div className="relative hidden w-1/2 flex-col justify-between p-14 lg:flex">
         <div className="flex items-center gap-3">
           <IconTile size="md">
-            <LeafIcon size={22} />
+            <img src="/brand/agroflow-mark.png" alt="AgroFlow" className="h-7 w-7 object-contain" />
           </IconTile>
           <span className="font-display text-xl font-semibold text-leaf-900">AgroFlow</span>
         </div>
@@ -61,7 +61,7 @@ export function AuthLayout({
         <div className="w-full max-w-md animate-rise-in">
           <div className="mb-6 flex items-center gap-3 lg:hidden">
             <IconTile size="sm">
-              <LeafIcon size={16} />
+              <img src="/brand/agroflow-mark.png" alt="AgroFlow" className="h-5 w-5 object-contain" />
             </IconTile>
             <span className="font-display text-lg font-semibold text-leaf-900">AgroFlow</span>
           </div>

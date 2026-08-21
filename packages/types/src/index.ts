@@ -91,6 +91,30 @@ export interface AuthenticatedUser {
   permissions: string[];
 }
 
+export type RoleRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+/** A user's request to be granted a role, reviewed by an ADMIN
+ * (role:approve). Replaces self-selected role at registration. */
+export interface RoleRequest {
+  id: string;
+  userId: string;
+  requestedRole: RoleName;
+  scopeId?: string;
+  status: RoleRequestStatus;
+  reviewedByUserId?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Shape returned by GET /role-requests (admin, pending only) -- includes
+ * enough of the applicant to show a name in the Admin Console without a
+ * second round-trip. */
+export interface RoleRequestWithUser extends RoleRequest {
+  user?: Pick<User, "id" | "fullName" | "phoneNumber">;
+}
+
 // ============================================================================
 // AGRICULTURE
 // ============================================================================
@@ -291,8 +315,9 @@ export interface ShipmentWithRelations extends Shipment {
 // ============================================================================
 // STORAGE
 // ============================================================================
-// Phase 11 scope: Warehouse only -- see database/prisma/schema.prisma's
-// STORAGE section for the full rationale (StorageBooking deferred).
+// StorageBooking was deferred through Phase 11 until Logistics/Finance
+// had something to book warehouse capacity against -- Phase 3 added it,
+// wired up under services/logistics.
 
 export interface Warehouse {
   id: string;
@@ -305,6 +330,25 @@ export interface Warehouse {
   currentUtilization?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export type StorageBookingStatus = "BOOKED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+
+export interface StorageBooking {
+  id: string;
+  warehouseId: string;
+  purchaseOrderId?: string;
+  bookedById: string;
+  quantityTonnes: number;
+  startDate: string;
+  endDate?: string;
+  status: StorageBookingStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StorageBookingWithRelations extends StorageBooking {
+  warehouse: Pick<Warehouse, "id" | "name" | "regionId">;
 }
 
 // ============================================================================
@@ -328,6 +372,77 @@ export interface Payment {
   confirmedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// ============================================================================
+// TRUST
+// ============================================================================
+// Phase 3 scope: Dispute is the frontend-facing piece the Admin Console
+// (Phase 5) reviews. Review/TrustScore don't have dedicated UI yet.
+
+export type DisputeStatus = "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
+
+export interface Dispute {
+  id: string;
+  purchaseOrderId: string;
+  raisedById: string;
+  reason: string;
+  status: DisputeStatus;
+  resolutionNotes?: string;
+  resolvedById?: string;
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DisputeWithRelations extends Dispute {
+  purchaseOrder?: Pick<PurchaseOrder, "id" | "buyerId" | "sellerId" | "totalAmount" | "currency" | "status">;
+}
+
+// ============================================================================
+// AGGREGATION
+// ============================================================================
+// Phase 3 scope: Inventory, the bulk lots an AGGREGATOR or
+// WAREHOUSE_MANAGER holds after consolidating produce from listings.
+
+export interface Inventory {
+  id: string;
+  ownerId: string;
+  warehouseId?: string;
+  cropId: string;
+  quantity: number;
+  unit: UnitName;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InventoryWithRelations extends Inventory {
+  crop: Pick<Crop, "id" | "name" | "defaultUnit">;
+  warehouse?: Pick<Warehouse, "id" | "name" | "regionId">;
+}
+
+// ============================================================================
+// ANALYTICS
+// ============================================================================
+// Phase 3 scope: read-only aggregate shapes for the Phase 5 Reports
+// dashboard -- these mirror services/analytics's return shapes exactly,
+// not separate database tables.
+
+export interface ChannelMixEntry {
+  channel: ChannelName;
+  listingCount: number;
+}
+
+export interface PriceTrendEntry {
+  crop: string;
+  averagePricePerUnit: number | null;
+  listingCount: number;
+}
+
+export interface DisputeRateSummary {
+  totalOrders: number;
+  totalDisputes: number;
+  disputeRate: number;
 }
 
 // ============================================================================

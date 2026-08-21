@@ -17,7 +17,18 @@ export function createApp(): Express {
 
   app.use(helmet());
   app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
-  app.use(express.json({ limit: "2mb" }));
+  // `verify` stashes the exact raw bytes received onto req.rawBody --
+  // needed by middleware/mobileMoneySignature.ts, which must HMAC the
+  // untouched body, not Express's re-serialized parsed copy of it
+  // (whitespace/key-order differences would break the signature).
+  app.use(
+    express.json({
+      limit: "2mb",
+      verify: (req, _res, buf) => {
+        (req as express.Request).rawBody = buf;
+      },
+    }),
+  );
 
   app.get("/health", (_req, res) => res.json({ status: "ok" }));
 

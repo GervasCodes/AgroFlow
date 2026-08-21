@@ -10,7 +10,7 @@
 import crypto from "node:crypto";
 import type { RegisterInput, LoginInput } from "@agroflow/validation";
 import type { AuthenticatedUser } from "@agroflow/types";
-import { otpRepository, refreshTokenRepository, roleRepository, userRepository } from "../../repositories/index.js";
+import { otpRepository, refreshTokenRepository, userRepository } from "../../repositories/index.js";
 import { AppError } from "../../utils/AppError.js";
 import { hashPassword, comparePassword } from "../../utils/password.js";
 import { generateOtp, hashOtp, compareOtp, OTP_TTL_MINUTES } from "../../utils/otp.js";
@@ -21,6 +21,9 @@ import {
   REFRESH_TOKEN_TTL_MS,
 } from "../../utils/jwt.js";
 import { toAuthenticatedUser } from "../users/index.js";
+import { notify } from "../notifications/index.js";
+import { sendEmail } from "../email/index.js";
+import { otpCodeEmail, welcomeEmail } from "../email/templates.js";
 
 export interface AuthResult {
   user: AuthenticatedUser;
@@ -47,19 +50,29 @@ export async function register(input: RegisterInput): Promise<AuthResult> {
   const existing = await userRepository.findUserByPhone(input.phoneNumber);
   if (existing) throw AppError.conflict("An account with this phone number already exists");
 
-  const role = await roleRepository.findRoleByName(input.role);
-  if (!role) throw AppError.badRequest(`Unknown role: ${input.role}`);
+  if (input.email) {
+    const existingEmail = await userRepository.findUserByEmail(input.email);
+    if (existingEmail) throw AppError.conflict("An account with this email already exists");
+  }
 
   const passwordHash = input.password ? await hashPassword(input.password) : undefined;
 
+  // No `role` on input by design (security hardening): a new account
+  // starts with zero roles/permissions. See services/role-requests for
+  // how a role is obtained afterwards (request -> admin approval).
   const user = await userRepository.createUser({
     phoneNumber: input.phoneNumber,
     fullName: input.fullName,
     passwordHash,
     preferredLanguage: input.preferredLanguage,
     regionId: input.regionId,
-    roleId: role.id,
+    email: input.email,
   });
+
+  if (user.email) {
+    const { subject, html } = welcomeEmail(user.fullName);
+    sendEmail({ to: user.email, subject, html }).catch((err) => console.error("Failed to send welcome email:", err));
+  }
 
   return issueTokens(user.id, toAuthenticatedUser(user));
 }
@@ -86,8 +99,19 @@ export async function requestOtp(phoneNumber: string): Promise<{ expiresInMinute
   const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
   await otpRepository.createOtp(user.id, codeHash, expiresAt);
 
-  // TODO(channels phase): send `code` via SMS/WhatsApp gateway instead of
-  // logging it. Logging is intentional for local/dev testing only.
+  // SMS is always attempted -- phone is the identity key for every
+  // account, so it's the one channel guaranteed to reach the user. Email
+  // is sent in addition when the account has one on file (see
+  // services/email -- Brevo). Both are fire-and-forget: a delivery
+  // failure must never block issuing the code (the console log below
+  // remains the fallback for local dev without either provider configured).
+  notify({ phoneNumber, type: "otp_code", data: { code, expiresInMinutes: OTP_TTL_MINUTES } });
+
+  if (user.email) {
+    const { subject, html } = otpCodeEmail(code, OTP_TTL_MINUTES);
+    sendEmail({ to: user.email, subject, html }).catch((err) => console.error("Failed to send OTP email:", err));
+  }
+
   if (process.env.NODE_ENV !== "production") {
     console.log(`[dev-only] OTP for ${phoneNumber}: ${code}`);
   }
